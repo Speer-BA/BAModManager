@@ -1,0 +1,89 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationVisualStyles>true</ApplicationVisualStyles>
+    <RootNamespace>BAModManager</RootNamespace>
+    <Authors>Speer</Authors>
+    <Company>Speer</Company>
+    <Copyright>© 2026 Speer · MIT License</Copyright>
+    <!-- Proper version info: unsigned exes without it look more suspicious to antivirus heuristics -->
+    <NeutralLanguage>en</NeutralLanguage>
+    <ApplicationIcon>Assets\BAModManager.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <!--
+    One project, two programs:
+      AppFlavor=Manager  (default) -> BAModManager.exe   - the full Mod Manager, for modders and tinkerers
+      AppFlavor=Launcher           -> BAModLauncher.exe  - Mod Launcher: one PLAY button for one modpack, for players
+  -->
+  <PropertyGroup Condition="'$(AppFlavor)' == 'Launcher'">
+    <AssemblyName>BAModLauncher</AssemblyName>
+    <Product>Broken Arrow Mod Launcher</Product>
+    <AssemblyTitle>Broken Arrow Mod Launcher</AssemblyTitle>
+    <Description>Installs MelonLoader and a Broken Arrow modpack from GitHub and starts the game.</Description>
+    <Version>1.1.0</Version>
+    <DefineConstants>$(DefineConstants);LAUNCHER</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(AppFlavor)' != 'Launcher'">
+    <AssemblyName>BAModManager</AssemblyName>
+    <Product>Broken Arrow Mod Manager</Product>
+    <AssemblyTitle>Broken Arrow Mod Manager</AssemblyTitle>
+    <Description>Installs and manages MelonLoader mods for Broken Arrow.</Description>
+    <Version>1.1.0</Version>
+  </PropertyGroup>
+
+  <!-- Mod Launcher only: the modpack it's built with (build_launcher.bat Speer-BA/ActualArrow). Empty = set up by the modder. -->
+  <PropertyGroup>
+    <DefaultModPack Condition="'$(DefaultModPack)' == ''"></DefaultModPack>
+    <TestingModPack Condition="'$(TestingModPack)' == ''"></TestingModPack>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="DefaultModPack" Value="$(DefaultModPack)" />
+    <!-- optional second channel players can switch to: build_launcher.bat owner/repo owner/repo-testing -->
+    <AssemblyMetadata Include="TestingModPack" Value="$(TestingModPack)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Inter (SIL Open Font License) - the typeface Broken Arrow's UI uses -->
+    <EmbeddedResource Include="Fonts\*.ttf" LogicalName="Fonts.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Assets\BAModManager.ico" LogicalName="Assets.icon.ico" />
+    <EmbeddedResource Include="Assets\logo.png" LogicalName="Assets.logo.png" />
+    <EmbeddedResource Include="Assets\default_preview.png" LogicalName="Assets.default_preview.png" />
+    <EmbeddedResource Include="Assets\gear_body.png" LogicalName="Assets.gear_body.png" />
+    <EmbeddedResource Include="Assets\gear_emblem.png" LogicalName="Assets.gear_emblem.png" />
+    <None Update="Fonts\Inter-LICENSE.txt"
+          Link="Inter-LICENSE.txt"
+          CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest"
+          ExcludeFromSingleFile="true" />
+  </ItemGroup>
+
+  <!--
+    Antivirus-friendly single file. With IncludeNativeLibrariesForSelfExtract the exe unpacks its native DLLs
+    into %TEMP% and loads them on every start - "drops DLLs and loads them" is what Kaspersky's behaviour
+    monitor reports as a trojan (PDM:Trojan.Win32.Bazon.a). So native DLLs are NOT bundled, and the ones a
+    Windows Forms app never loads (WPF, HTTP/3, debugger) aren't published at all.
+  -->
+  <PropertyGroup>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+  <Target Name="DropUnusedNativeFiles" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <_UnusedNative Include="@(ResolvedFileToPublish)"
+        Condition="'%(Filename)' == 'D3DCompiler_47_cor3' or '%(Filename)' == 'PenImc_cor3' or
+                   '%(Filename)' == 'PresentationNative_cor3' or '%(Filename)' == 'vcruntime140_cor3' or
+                   '%(Filename)' == 'wpfgfx_cor3' or '%(Filename)' == 'msquic' or
+                   '%(Filename)' == 'Microsoft.DiaSymReader.Native.amd64' or '%(Filename)' == 'mscordbi' or
+                   $([System.String]::Copy('%(Filename)').StartsWith('mscordaccore')) or
+                   '%(Filename)%(Extension)' == 'createdump.exe'" />
+      <ResolvedFileToPublish Remove="@(_UnusedNative)" />
+    </ItemGroup>
+  </Target>
+
+</Project>

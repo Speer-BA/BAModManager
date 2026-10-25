@@ -1,0 +1,11 @@
+<Project>
+  <!-- Keep the two programs' build files apart (see AppFlavor in BAModManager.csproj) -->
+  <PropertyGroup Condition="'$(AppFlavor)' == 'Launcher'">
+    <BaseIntermediateOutputPath>obj\launcher\</BaseIntermediateOutputPath>
+    <BaseOutputPath>bin\launcher\</BaseOutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <!-- neither build may pick up the other one's generated files -->
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**;publish*\**;release\**</DefaultItemExcludes>
+  </PropertyGroup>
+</Project>
